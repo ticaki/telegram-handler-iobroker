@@ -158,7 +158,7 @@ on ({id:'telegram.0.communicate.botSendMessageId', change:'ne'}, (obj) =>
 
 on({ id: 'telegram.0.communicate.request', change: "any", ack: false }, (obj)=> {setTimeout(mainTrigger, 2, obj);});
 
-function mainTrigger(obj) {
+const mainTrigger = async function (obj) {
     //var chatid = getState('telegram.0.communicate.requestChatId').val;
     //var users = JSON.parse(getState('telegram.0.communicate.users').val);
     var msg = obj.state.val;
@@ -195,7 +195,7 @@ function mainTrigger(obj) {
 
     let m = currMenu[a]; m.user = user;
     if (m.command !== undefined) {
-        let result = doCmd(m);
+        const result = await doCmd(m);
         if (result) {
             if (typeof result !== 'object') {
                 m.title = result;
@@ -244,6 +244,7 @@ function _sendMessage(m, edit=true, kb = true) {
                 menu.forEach((a)=>{
                     let c = [];
                     a.forEach((b, i) => {
+                        b.text = getIdText(b.text,lastMenu);
                         lastMenu.push(b);
                         c.push(b.text);
                     });
@@ -270,27 +271,27 @@ function _sendMenu(user='') {
     _sendMessage(m, false);
 }
 
-function doCmd(m) {
+const doCmd = async function (m) {
     try {
         let result;
         switch (m.args.length) {
             case 5:
-            result = m.command(m.args[0], m.args[1], m.args[2], m.args[3], m.args[4]);
+            result = await m.command(m.args[0], m.args[1], m.args[2], m.args[3], m.args[4]);
             break;
             case 4:
-            result = m.command(m.args[0], m.args[1], m.args[2], m.args[3]);
+            result = await m.command(m.args[0], m.args[1], m.args[2], m.args[3]);
             break;
             case 3:
-            result = m.command(m.args[0], m.args[1], m.args[2]);
+            result = await m.command(m.args[0], m.args[1], m.args[2]);
             break;
             case 2:
-            result = m.command(m.args[0], m.args[1]);
+            result = await m.command(m.args[0], m.args[1]);
             break;
             case 1:
-            result = m.command(m.args[0]);
+            result = await m.command(m.args[0]);
             break;
             case 0:
-            result = m.command();
+            result = await m.command();
             break;
         }
         if (result) {
@@ -379,10 +380,11 @@ function getLightsOfRoom(tRoom, selectArr, id = '') {
         // vorwegnahme des Umschaltens, um mit getState() den Umschaltvorgang zu bestätigen wäre ein Timeout nötig.
         if (id == obj) data[obj].value = !data[obj].value;
         result.submenu.push(
-            [{text:data[obj].name + ' ' + (data[obj].value ? 'an 💡' : 'aus') , callback_data: prefix + obj}],
+            [{text:data[obj].name + ' ' + (data[obj].value ? 'an 💡' : 'aus') , callback_data: prefix + obj}, {text:'Details' , callback_data: prefix + obj + 'details'}]
         );
         if ( tempMenuArr.findIndex((a) => { return a.callback_data === prefix + obj }) == -1 ) {
             tempMenuArr.push({text:data[obj].name, title:'', parent_data: lastMessage, callback_data: prefix + obj, command: getLightsOfRoom, args:[tRoom, selectArr, obj]});
+            tempMenuArr.push({text:'Details', title:'', parent_data: lastMessage, callback_data: prefix + obj + 'details', command: getDetailsOfLight, args:[obj]});
         }
     }
     if (id) {
@@ -391,6 +393,50 @@ function getLightsOfRoom(tRoom, selectArr, id = '') {
     return result;
 }
 
+const getDetailsOfLight = async function (id, setId=null, value=0) {
+    const prefix = '1-##**25';
+    if (setId) {
+         setState(setId, getState(setId).val + value)
+        await sleep(20);
+    }
+    let sId = id.substring(0,id.lastIndexOf('.'));
+    let briGroup = $('state[role=level.brightness][state.id='+sId+'.*]');
+    let ctGroup = $('state[role=level.color.temperature][state.id='+sId+'.*]');
+    let data = {};
+    let title = '';
+
+    _getData(sId, briGroup, 'Helligkeit: ', 'heller', 'dunkler');
+    _getData(sId, ctGroup, 'Lichttemperatur: ', 'wärmer', 'kälter');
+    let count = 0;
+    let result = {};
+    for (let sobj in data) {
+        let obj = data[sobj];
+        if (result.submenu === undefined) {
+            result.submenu = [];
+            result.title = obj.name+'\n';
+        }
+        result.title += obj.text + obj.value +'\n';
+        if (count == 0 ) {
+            result.submenu.push([{text:obj.up , callback_data: prefix + sobj + 'up'}]);
+            result.submenu.push([{text:obj.down , callback_data: prefix + sobj + 'down'}]);
+        } else {
+            result.submenu[result.submenu.length-2].push({text:obj.up , callback_data: prefix + sobj + 'up'});
+            result.submenu[result.submenu.length-1].push({text:obj.down , callback_data: prefix + sobj + 'down'});
+        }
+        let o1 = result.submenu[result.submenu.length-2][count];
+        let o2 = result.submenu[result.submenu.length-1][count++];
+        if ( tempMenuArr.findIndex((a) => { return a.callback_data === o1.callback_data || a.callback_data === o2.callback_data;}) == -1 ) {
+            tempMenuArr.push({text:o1.text, title:'', parent_data: lastMessage, callback_data: o1.callback_data, command: getDetailsOfLight, args:[id, sobj, +25]});
+            tempMenuArr.push({text:o2.text, title:'', parent_data: lastMessage, callback_data: o2.callback_data, command: getDetailsOfLight, args:[id, sobj, -25]});
+        }
+    }
+    return result;
+
+    function _getData(id, arr, text, up, down) {
+            let obj = arr[0];
+            data[obj] = {name: getObject(id).common.name, value: getState(obj).val, text: text ,up: up, down: down};
+    }
+}
 function getRoomsLightsSum(selector) {
     const prefix = '1-##**22';
     const prefixState = '#^#';
@@ -443,5 +489,28 @@ function getBatt(name, id, min) {
 }
 
 function round(n, d = 0) { return (Math.floor((n * Math.pow(10, d)) + 0.5) / Math.pow(10, d)); }
+
+function getIdText(text, arr) {
+    let test = text;
+    let prefix = '<>*';
+    let d=0;
+    while (arr.findIndex((a)=>{return a.text == test}) != -1 ) {
+        test = '';
+        let e = d++
+        while (true) {
+            let c = e % prefix.length;
+            test += prefix[c];
+            e -= c;
+            if ( e == 0 ) break;
+            e /= prefix.length;
+        }
+        test += ' ' + text;
+    }
+    return test;
+}
+
+async function sleep (ms) {
+    return new Promise( resolve => {setTimeout(()=>{ resolve();},ms);});
+}
 
 _sendMenu();
