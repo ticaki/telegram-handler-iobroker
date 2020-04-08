@@ -9,6 +9,7 @@ var oldMessageID = []
 var lastMenu = [];
 var timeoutSameMenu = null;
 var inline_keyboard = false;
+const backText = 'Zurück';
 const cMenuTimeoutTime = 20*60*1000;
 
 var messageObj = [
@@ -137,7 +138,7 @@ function setCallbackData(mobj) {
 
 on ({id:'telegram.0.communicate.botSendMessageId', change:'ne'}, (obj) =>
 {
-    if (oldMessageID.length === 0 || oldMessageID[oldMessageID.length-1] !== obj.state.val) {
+    if (oldMessageID.length === 0 || oldMessageID.indexOf(obj.state.val) == -1) {
         oldMessageID.push(obj.state.val);
     }
     while (oldMessageID.length > 2) {
@@ -230,9 +231,9 @@ function _sendMessage(m, edit=true, kb = true) {
         menu = m.menu.slice();
     }
     if (m.parent_data !== undefined && m.parent_data) {
-        menu.push([{text:'Zurück', callback_data:m.parent_data}]);
+        menu.push([{text: backText, callback_data:m.parent_data}]);
         // Zurückfunktion immer zur Verfügungstellen
-        lastMenu = [[{text:'Zurück', callback_data:m.parent_data}]];
+        lastMenu = [[{text: backText, callback_data:m.parent_data}]];
     };
     if (!edit || !inline_keyboard) {
         if ( menu.length ) {
