@@ -20,8 +20,8 @@ var messageObj = [
             {
                 text: 'Warnungen',
                 title: 'Warnungsmenü',
-                submenu: [[{ text: 'Warnungen kurz', callback_data: 'DWDUZWNINA#!§$TT' },
-                { text: 'Warnungen lang', callback_data: 'DWDUZWNINA#!§$LONG' }],
+                submenu: [[{ text: 'Warnungen kurz', command: switchState, args:['javascript.0.wetterwarnung.commands.telegram_short'] },
+                { text: 'Warnungen lang', command: switchState, args:['javascript.0.wetterwarnung.commands.telegram_long'] }],
                 [{ text: 'Debug An', callback_data: 'DWDUZWNINA#!§$debugan', new_menu: true},
                 { text: 'Debug Aus', callback_data: 'DWDUZWNINA#!§$debugaus', new_menu: true }],
                 [{ text: 'Debug Email', callback_data: 'DWDUZWNINA#!§$DEBUGEMAIL', new_menu: true }]]
@@ -175,7 +175,7 @@ function mainTrigger(obj) {
         });
         let i = lastMenu.findIndex((a)=>{return a.text === msg});
         msg = '['+user+']'+lastMenu[i].callback_data;
-        lastMenu = [];
+        //lastMenu = [];
         return setState('telegram.0.communicate.request', msg);
     }
     lastMessage = currentMessage;
@@ -207,7 +207,7 @@ function mainTrigger(obj) {
                 _sendMessage(m, sameMenu);
             }
         } else {
-            sendTo('telegram.0', { user: m.user, answerCallbackQuery: { text: 'done', showAlert: false } });
+            if ( inline_keyboard ) sendTo('telegram.0', { user: m.user, answerCallbackQuery: { text: 'done', showAlert: false } });
         }
     } else {
         if (m.menu !== undefined) _sendMessage(m, sameMenu);
@@ -220,7 +220,7 @@ function mainTrigger(obj) {
 
 function _sendMessage(m, edit=true, kb = true) {
     let newmsg = {};
-    sendTo('telegram.0', { user: m.user, answerCallbackQuery: { text: m.text, showAlert: false } });
+    if ( inline_keyboard ) sendTo('telegram.0', { user: m.user, answerCallbackQuery: { text: m.text, showAlert: false } });
     newmsg.user = m.user;
     newmsg.text = m.title;
     newmsg.disable_notification = true;
@@ -229,11 +229,16 @@ function _sendMessage(m, edit=true, kb = true) {
     if ( m.menu !== undefined) {
         menu = m.menu.slice();
     }
-    if (m.parent_data !== undefined && m.parent_data) {menu.push([{text:'Zurück', callback_data:m.parent_data}]);};
-    lastMenu = [];
+    if (m.parent_data !== undefined && m.parent_data) {
+        menu.push([{text:'Zurück', callback_data:m.parent_data}]);
+        // Zurückfunktion immer zur Verfügungstellen
+        lastMenu = [[{text:'Zurück', callback_data:m.parent_data}]];
+    };
     if (!edit || !inline_keyboard) {
         if ( menu.length ) {
             if ( !inline_keyboard) {
+                // Zurückfunktion wieder löschen, ist ja in menu enthalten.
+                lastMenu = [];
                 let newMenu = [];
                 menu.forEach((a)=>{
                     let c = [];
@@ -243,7 +248,7 @@ function _sendMessage(m, edit=true, kb = true) {
                     });
                     newMenu.push(c);
                 });
-                newmsg.reply_markup = { keyboard: newMenu, resize_keyboard: true, one_time_keyboard: true };
+                newmsg.reply_markup = { keyboard: newMenu, resize_keyboard: true };
             } else {
                 newmsg.reply_markup = { inline_keyboard: menu };
             }
