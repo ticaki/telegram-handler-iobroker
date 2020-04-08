@@ -138,7 +138,7 @@ function setCallbackData(mobj) {
     });
 }
 
-on ({id:'telegram.0.communicate.botSendMessageId', change:'ne'}, (obj) =>
+on ({id: telegramInstanz + '.communicate.botSendMessageId', change:'ne'}, (obj) =>
 {
     if (oldMessageID.length === 0 || oldMessageID.indexOf(obj.state.val) == -1) {
         oldMessageID.push(obj.state.val);
@@ -150,7 +150,7 @@ on ({id:'telegram.0.communicate.botSendMessageId', change:'ne'}, (obj) =>
             //user: user,
             deleteMessage: {
                 options: {
-                    chat_id: getState("telegram.0.communicate.requestChatId").val,
+                    chat_id: getState(telegramInstanz + ".communicate.requestChatId").val,
                     message_id: id
                 }
             }
@@ -158,11 +158,11 @@ on ({id:'telegram.0.communicate.botSendMessageId', change:'ne'}, (obj) =>
     }
 })
 
-on({ id: 'telegram.0.communicate.request', change: "any", ack: false }, (obj)=> {setTimeout(mainTrigger, 2, obj);});
+on({ id: telegramInstanz + '.communicate.request', change: "any", ack: false }, (obj)=> {setTimeout(mainTrigger, 2, obj);});
 
 const mainTrigger = async function (obj) {
-    //var chatid = getState('telegram.0.communicate.requestChatId').val;
-    //var users = JSON.parse(getState('telegram.0.communicate.users').val);
+    //var chatid = getState(telegramInstanz + '.communicate.requestChatId').val;
+    //var users = JSON.parse(getState(telegramInstanz + '.communicate.users').val);
     var msg = obj.state.val;
     var user = msg.substring(1, msg.indexOf(']'));
     msg = msg.substring(msg.indexOf(']') + 1);
@@ -171,15 +171,15 @@ const mainTrigger = async function (obj) {
             //user: user,
             deleteMessage: {
                 options: {
-                    chat_id: getState("telegram.0.communicate.requestChatId").val,
-                    message_id: getState("telegram.0.communicate.requestMessageId").val
+                    chat_id: getState(telegramInstanz + ".communicate.requestChatId").val,
+                    message_id: getState(telegramInstanz + ".communicate.requestMessageId").val
                 }
             }
         });
         let i = lastMenu.findIndex((a)=>{return a.text === msg});
         msg = '['+user+']'+lastMenu[i].callback_data;
         //lastMenu = [];
-        return setState('telegram.0.communicate.request', msg);
+        return setState(telegramInstanz + '.communicate.request', msg);
     }
     lastMessage = currentMessage;
     let currMenu = [];
@@ -259,8 +259,8 @@ function _sendMessage(m, edit=true, kb = true) {
         }
     } else {
         let options = {};
-        options.chat_id = getState("telegram.0.communicate.requestChatId").val;
-        options.message_id = getState("telegram.0.communicate.requestMessageId").val;
+        options.chat_id = getState(telegramInstanz + ".communicate.requestChatId").val;
+        options.message_id = getState(telegramInstanz + ".communicate.requestMessageId").val;
         if ( menu.length ) options.reply_markup = { keyboard: menu };
         newmsg.editMessageText = {options};
     }
@@ -389,7 +389,7 @@ function getLightsOfRoom(tRoom, selectArr, id = '') {
         result.submenu.push(menu);
         if ( tempMenuArr.findIndex((a) => { return a.callback_data === prefix + obj }) == -1 ) {
             tempMenuArr.push({text:data[obj].name, title:'', parent_data: lastMessage, callback_data: prefix + obj, command: getLightsOfRoom, args:[tRoom, selectArr, obj]});
-            tempMenuArr.push({text:'Details', title:'', parent_data: lastMessage, callback_data: prefix + obj + 'details', command: getDetailsOfLight, args:[obj]});
+            tempMenuArr.push({text:'Details', title:'', parent_data: currentMessage, callback_data: prefix + obj + 'details', command: getDetailsOfLight, args:[obj]});
         }
     }
     if (id) {
