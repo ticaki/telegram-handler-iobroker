@@ -381,9 +381,12 @@ function getLightsOfRoom(tRoom, selectArr, id = '') {
         }
         // vorwegnahme des Umschaltens, um mit getState() den Umschaltvorgang zu bestätigen wäre ein Timeout nötig.
         if (id == obj) data[obj].value = !data[obj].value;
-        result.submenu.push(
-            [{text:data[obj].name + ' ' + (data[obj].value ? 'an 💡' : 'aus') , callback_data: prefix + obj}, {text:'Details' , callback_data: prefix + obj + 'details'}]
-        );
+        let sId = obj.substring(0,obj.lastIndexOf('.'));
+        let menu = [{text:data[obj].name + ' ' + (data[obj].value ? 'an 💡' : 'aus') , callback_data: prefix + obj}];
+        if ($('state[role=level.brightness][state.id='+sId+'.*]').length > 0|| $('state[role=level.color.temperature][state.id='+sId+'.*]').length > 0) {
+            menu.push({text:'Details' , callback_data: prefix + obj + 'details'});
+        }
+        result.submenu.push(menu);
         if ( tempMenuArr.findIndex((a) => { return a.callback_data === prefix + obj }) == -1 ) {
             tempMenuArr.push({text:data[obj].name, title:'', parent_data: lastMessage, callback_data: prefix + obj, command: getLightsOfRoom, args:[tRoom, selectArr, obj]});
             tempMenuArr.push({text:'Details', title:'', parent_data: lastMessage, callback_data: prefix + obj + 'details', command: getDetailsOfLight, args:[obj]});
