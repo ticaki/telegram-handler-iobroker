@@ -1,3 +1,5 @@
+var telegramInstanz = 'telegram.0';
+
 var arrHeader = []; // {"Header":"", "result":,"sub":null,"cmd":,"text":""}
 var menuArr = [];
 var callbackCounter = 1400020000;
@@ -186,7 +188,7 @@ const mainTrigger = async function (obj) {
     currentMessage = msg;
     let a = currMenu.findIndex((a) => { return a.callback_data === currentMessage; });
     if (a == -1) {
-        sendTo('telegram.0', { user: user, answerCallbackQuery: { text: 'Error #1', showAlert: false } });
+        if (inline_keyboard) sendTo(telegramInstanz, { user: user, answerCallbackQuery: { text: 'Error #1', showAlert: false } });
         log('#1 Dont find callback_data in menuArr. ' + msg, 'warn');
 
         return;
@@ -208,7 +210,7 @@ const mainTrigger = async function (obj) {
                 _sendMessage(m, sameMenu);
             }
         } else {
-            if ( inline_keyboard ) sendTo('telegram.0', { user: m.user, answerCallbackQuery: { text: 'done', showAlert: false } });
+            if ( inline_keyboard ) sendTo(telegramInstanz, { user: m.user, answerCallbackQuery: { text: 'done', showAlert: false } });
         }
     } else {
         if (m.menu !== undefined) _sendMessage(m, sameMenu);
@@ -221,7 +223,7 @@ const mainTrigger = async function (obj) {
 
 function _sendMessage(m, edit=true, kb = true) {
     let newmsg = {};
-    if ( inline_keyboard ) sendTo('telegram.0', { user: m.user, answerCallbackQuery: { text: m.text, showAlert: false } });
+    if ( inline_keyboard ) sendTo(telegramInstanz, { user: m.user, answerCallbackQuery: { text: m.text, showAlert: false } });
     newmsg.user = m.user;
     newmsg.text = m.title;
     newmsg.disable_notification = true;
@@ -262,7 +264,7 @@ function _sendMessage(m, edit=true, kb = true) {
         if ( menu.length ) options.reply_markup = { keyboard: menu };
         newmsg.editMessageText = {options};
     }
-    sendTo('telegram.0', newmsg);
+    sendTo(telegramInstanz, newmsg);
 }
 
 function _sendMenu(user='') {
@@ -297,10 +299,10 @@ const doCmd = async function (m) {
         if (result) {
             return result;
         } else {
-            sendTo('telegram.0', { user: m.user, answerCallbackQuery: { text: 'done', showAlert: false } });
+            if ( inline_keyboard ) sendTo(telegramInstanz, { user: m.user, answerCallbackQuery: { text: 'done', showAlert: false } });
         }
     } catch (e) {
-        sendTo('telegram.0', { user: m.user, answerCallbackQuery: { text: 'Error #2: '+e, showAlert: true } });
+        if ( inline_keyboard ) sendTo(telegramInstanz, { user: m.user, answerCallbackQuery: { text: 'Error #2: '+e, showAlert: true } });
         log('#2 ' + e, 'warn');
     }
 }
