@@ -329,13 +329,17 @@ function getFeuchtigkeit(selector) {
 function getValuePerRoom(arr, id = false) {
     var data = {};
     arr.each((obj) => {
-        var rooms = getObject(obj.replace('.available', ''), 'rooms').enumNames;
+        var rooms = getObject(obj.replace('.available', ''), 'rooms').enumIds;
         if (rooms === undefined) return;
         var temp;
         if (id) temp = id;
         else temp = getState(obj).val
         var cName = getObject(obj).common.name;
         rooms.forEach((room) => {
+            // workaround manche Geräte enthalten Räume die ich nicht entfernen kann.
+            var enumObj = getObject(room);
+            if (enumObj.common.members.findIndex((a) => {return obj.includes(a)}) == -1 ) return;
+            room = enumObj.common.name;
             let r = room.de;
             if (r === undefined) r = room;
             if (data[r] === undefined) data[r] = {name: cName, values:[]};
@@ -350,9 +354,13 @@ function getLightsOfRoom(tRoom, selectArr, id = '') {
     const prefixState = '#^#';
     var data = {};
     selectArr.each((obj) => {
-        var rooms = getObject(obj, 'rooms').enumNames;
+        var rooms = getObject(obj.replace('.available', ''), 'rooms').enumIds;
         if (rooms === undefined) return;
         rooms.forEach((room) => {
+            // workaround manche Geräte enthalten Räume die ihnen nicht zugewiesen sind.
+            var enumObj = getObject(room);
+            if (enumObj.common.members.findIndex((a) => {return obj.includes(a)}) == -1 ) return;
+            room = enumObj.common.name;
             let r = room.de;
             if (r === undefined) r = room;
             if (r === tRoom ){
